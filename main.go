@@ -1,13 +1,20 @@
 package main
 
 import (
-	"encoding/csv"
+	
 	"fmt"
 	"os"
+	"io"
+	"time"   
+	"net/http"
+	"encoding/csv"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 )
 
+var (
+    fileName    string
+)
 type planData struct {
     PartnerCode string
     PartnerName string
@@ -26,6 +33,29 @@ type planData struct {
 }
 func main() {
 
+
+
+
+	url := "https://dev-filemgmt-api.staging.cbgtech.net/carabao/gcs/download?attachId=5f3d1475-49e9-4dfc-b3e1-9c4927914806"
+
+    client := http.Client{Timeout: 5 * time.Second}
+    request, err := http.NewRequest(http.MethodGet, url, nil)
+
+    request.Header.Set("Authorization", "Bearer "+ os.ExpandEnv("$BEARER_TOKEN"))
+    request.Header.Set("Content-Type", "application/json") 
+
+	fmt.Println(request.Header)
+
+    response, err := client.Do(request)
+	DownloadFile("DataImport.csv", url)
+    if err != nil {
+        panic(err)
+    }
+	fmt.Println("Downloaded: " + url)
+
+	defer response.Body.Close()
+
+	
     csvFile, err := os.Open("SurveyId.csv")
 	if err != nil {
 		fmt.Println(err)
@@ -65,22 +95,42 @@ func main() {
 		}
 		defer db.Close()
 	
-		// insForm, err := db.Prepare("INSERT INTO plan(PartnerCode, PartnerName, AddressInfo, Fullname, TemplateName, RouteDate, CheckDate, VisitDate, CheckOutAt, SurveyDate, Uid, TemplateId, SurveyId, VisitID) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
-        // if err != nil {
-        //     panic(err.Error())
-        // }
-		// defer db.Close()
-        // res, err := insForm.Exec(plan.PartnerCode, plan.PartnerName, plan.AddressInfo, plan.Fullname, plan.TemplateName, plan.RouteDate, plan.CheckDate, plan.VisitDate, plan.CheckOutAt, plan.SurveyDate, plan.Uid, plan.TemplateId, plan.SurveyId, plan.VisitID)
-		// if err != nil {
-		// 	fmt.Println(err)
-        // }
+		insForm, err := db.Prepare("INSERT INTO plan(PartnerCode, PartnerName, AddressInfo, Fullname, TemplateName, RouteDate, CheckDate, VisitDate, CheckOutAt, SurveyDate, Uid, TemplateId, SurveyId, VisitID) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        if err != nil {
+            panic(err.Error())
+        }
+		defer db.Close()
+        res, err := insForm.Exec(plan.PartnerCode, plan.PartnerName, plan.AddressInfo, plan.Fullname, plan.TemplateName, plan.RouteDate, plan.CheckDate, plan.VisitDate, plan.CheckOutAt, plan.SurveyDate, plan.Uid, plan.TemplateId, plan.SurveyId, plan.VisitID)
+		if err != nil {
+			fmt.Println(err)
+        }
 		
-		// id, err := res.LastInsertId()
+		id, err := res.LastInsertId()
 		
-		// fmt.Println("Insert id", id)
-		// defer db.Close()
+		fmt.Println("Insert id", id)
+		defer db.Close()
     }
 	totalDataRows := len(csvLines)
     fmt.Println("Total CVS: of rows:", totalDataRows)
 
+}
+func DownloadFile(filepath string, url string) error {
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
