@@ -36,7 +36,7 @@ func main() {
 
 
 
-	url := "https://dev-filemgmt-api.staging.cbgtech.net/carabao/gcs/download?attachId=5f3d1475-49e9-4dfc-b3e1-9c4927914806"
+	url := "http://www.golang-book.com/public/pdf/gobook.pdf"
 
     client := http.Client{Timeout: 5 * time.Second}
     request, err := http.NewRequest(http.MethodGet, url, nil)
@@ -47,7 +47,7 @@ func main() {
 	fmt.Println(request.Header)
 
     response, err := client.Do(request)
-	DownloadFile("DataImport.csv", url)
+	DownloadFile("DataImport.pdf", url)
     if err != nil {
         panic(err)
     }
