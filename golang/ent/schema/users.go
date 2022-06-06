@@ -1,7 +1,9 @@
 package schema
 
-import "entgo.io/ent"
-
+import (
+	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
+)
 // Users holds the schema definition for the Users entity.
 type Users struct {
 	ent.Schema
@@ -9,7 +11,10 @@ type Users struct {
 
 // Fields of the Users.
 func (Users) Fields() []ent.Field {
-	return nil
+	return []ent.Field{
+		field.String("name"),
+		field.Int("age"),
+	}
 }
 
 // Edges of the Users.
